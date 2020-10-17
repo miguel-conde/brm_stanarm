@@ -1,0 +1,157 @@
+---
+title: "Introduction to Bayesian Linear Models"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+A review of frequentist regression using lm(), an introduction to Bayesian regression using stan_glm(), and a comparison of the respective outputs.
+
+## Non Bayesian Linear Regression
+
+## Exploring the data
+
+Let's get familiar with the Spotify data, songs, which is already loaded for you. Before we start developing models, it's a good idea to take a peek at our data to make sure we know everything that is included.
+
+Instructions
+100 XP
+
++ Print the first 6 rows of the data set.
++ Print the structure of the data set.
+
+```{r}
+library(readr)
+songs <- read_csv(here::here("datasets", "datacamp-spotify-data.csv"))
+```
+
+```{r}
+# Print the first 6 rows
+head(songs)
+
+# Print the structure
+str(songs)
+```
+
+Great! The data contains information on the name and artist of each song, along with quantitative information related to the tempo, valence, popularity, age, and length. Now let's use the data to estimate a regression model.
+
+## Fitting a frequentist linear regression
+Practice creating a linear model using data on songs from Spotify. This will give us base line to compare our Bayesian model to. The songs dataset is already loaded for you.
+
+Instructions
+100 XP
+
++ Create a linear model, lm_model, that predicts song popularity from song age.
++ Print a summary of the linear model.
++ Use the broom package to view only the coefficients.
+```{r}
+library(broom)
+```
+
+
+```{r}
+# Create the model here
+lm_model <- lm(popularity ~ song_age, data = songs)
+
+# Produce the summary
+summary(lm_model)
+
+# Print a tidy summary of the coefficients
+tidy(lm_model)
+```
+
+Nice work! You've created a frequentist linear model and learned how to examine the output. In this model, the coefficient for song_age is -0.00585, which means we'd expected the popularity of a song to decrease by -0.00585 for each additional day.
+
+## Bayesian Linear Regression
+
+## Fitting a Bayesian linear regression
+Practice fitting a Bayesian model. This is the same model we already estimated with frequentist methods, so we'll be able to compare the parameter outputs later. The songs data is already loaded.
+
+Instructions
+100 XP
+
++ Create a Bayesian linear model, stan_model, that predicts song popularity from song age
++ Print a summary of the Bayesian linear model
+
+```{r}
+library(rstanarm)
+```
+
+```{r}
+# Create the model here
+stan_model <- stan_glm(popularity ~ song_age, data = songs)
+
+# Produce the summary
+summary(stan_model)
+
+# Print a tidy summary of the coefficients
+tidy(stan_model)
+```
+
+Yes! You now know how to estimate a Bayesian regression model! Notice that the parameter estimates are very similar to those of the frequentist model. Bayesian estimation won't usually have a large impact on your estimates, but will greatly influence the types of estimates you are able to make.
+
+## Convergence criteria
+
+What is the accepted threshold for Rhat to conclude the model has converged?
+
+Possible Answers
+
++ 1.0
++ **1.1**
++ 1.5
++ 2
+
+That's right! If all Rhat values are below 1.1, your model converged!
+
+## Assessing model convergence
+
+Has the Bayesian regression model stan_model converged?
+
+Instructions
+
+Possible Answers
+
++ **Yes!**
++ No way!
++ We don't have enough information.
+
+Correct! All of the Rhat values are less than 1.1.
+
+## Comparing Bayesian and Frequentist Approaches
+
+## Difference between frequentists and Bayesians
+What is the core difference between frequentists and Bayesians?
+
+Possible Answers
+
++ ** Frequentists believe data is random, Bayesians assume parameters are random**
++ Frequentists believe data is fixed, Bayesians assume parameters are fixed
++ There is no difference, just a matter of preference
++ Bayesian estimation requires special data
+
+Yes! Frequentists assume data is random and parameters are fixed, whereas Bayesian assume the opposite.
+
+## Creating credible intervals
+Practice creating credible intervals. Credible intervals allow us to make inferences about the probability of a parameter taking a given value. This is how we determine if a parameter is meaningful when estimated with Bayesian methods. The Bayesian model, stan_model, is already created for you.
+
+Instructions
+100 XP
+
++ Create 90% credible intervals for the parameters in stan_model
++ Create 95% credible intervals for the parameters in stan_model
++ Create 80% credible intervals for the parameters in stan_model
+
+```{r}
+# Create the 90% credible intervals
+posterior_interval(stan_model)
+
+# Create the 95% credible intervals
+posterior_interval(stan_model, prob = .95)
+
+# Create the 80% credible intervals
+posterior_interval(stan_model, prob = .80)
+```
+Great job! You're well on your way to becoming a Bayesian! Here, we've learned how to create a credible interval for our parameters, and how to change how big of an interval we want. These intervals allow us to make inferences about the actual values of the parameters, unlike in frequentist regression.
+
+

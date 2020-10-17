@@ -1,0 +1,282 @@
+---
+title: "Modifying a Bayesian Model"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Learn how to modify your Bayesian model including changing the number and length of chains, changing prior distributions, and adding predictors.
+
+```{r}
+library(rstanarm)
+library(readr)
+songs <- read_csv(here::here("datasets", "datacamp-spotify-data.csv"))
+```
+
+## What's in a Bayesian Model
+
+## Altering chains
+Let's practice changing the number and length of chains so that we can get a posterior distribution of different sizes. By changing the size of the posterior, we can change the number of samples used for the posterior summaries, and impact the estimation time. The songs data is already loaded.
+
+Instructions
+100 XP
+
++ For all models, predict popularity from the song_age.
++ Estimate a model with 3 chains, each 1000 iterations long, with the first 500 discarded
++ Estimate a model with 2 chains, each 100 iterations long, discarding the first 50
++ Print a summary of each model
+
+```
+# 3 chains, 1000 iterations, 500 warmup
+model_3chains <- stan_glm(popularity ~ song_age, data = songs,
+    chains = 3, iter = 1000, warmup = 500)
+
+# 2 chains, 100 iterations, 50 warmup
+model_2chains <- stan_glm(popularity ~ song_age, data = songs,
+    chains = 2, iter = 100, warmup = 50)
+```
+
+```{r, include = FALSE}
+# 3 chains, 1000 iterations, 500 warmup
+model_3chains <- stan_glm(popularity ~ song_age, data = songs,
+    chains = 3, iter = 1000, warmup = 500)
+
+# 2 chains, 100 iterations, 50 warmup
+model_2chains <- stan_glm(popularity ~ song_age, data = songs,
+    chains = 2, iter = 100, warmup = 50)
+```
+
+```{r}
+# Print a summary of model_3chains
+summary(model_3chains)
+
+# Print a summary of model_2chains
+summary(model_2chains)
+```
+
+Correct! Now you can alter the size of the sample of your poterior distribution! Be careful when making your chains shorter though. Notice the warning messages that we received for model_2chains. These are an indication that we didn't draw enough samples from the posterior distribution to get good estimates of the parameters.
+
+## Do I have enough iterations?
+The model_2chains object from the last exercise is load in the environment. Has the model converged?
+
+Instructions
+50 XP
+
+Possible Answers
+
++ Yeah!
++ **Not a chance!**
++ We can't tell.
+
+Correct! The Rhat values are above 1.1.
+
+## Prior Distributions
+
+## Determine Prior Distributions
+Now let's explore the prior distributions for a Bayesian model, so that we can understand how rstanarm handles priors. Priors can have a large impact on our model, so it's important to know which prior distributions were used in an estimated model. The songs data set is already loaded.
+
+Instructions
+100 XP
+
++ Estimate a model predicting popularity from song_age
++ Print a summary of the prior distributions to the screen
+
+
+```{r, include = FALSE}
+# Estimate the model
+stan_model <- stan_glm(popularity ~ song_age, data = songs)
+```
+
+```
+# Estimate the model
+stan_model <- stan_glm(popularity ~ song_age, data = songs)
+```
+
+```{r}
+# Print a summary of the prior distributions
+prior_summary(stan_model)
+```
+
+
+
+Great! Now you know how to identify the prior distributions of your model! The intercept uses a normal prior with a mean of 0 and scale of 10. The coefficient for the predictor uses a normal prior with a mean of 0 and a scale of 2.5. Finally, the error variance uses an exponential priors with a rate of 1. However, notice that all priors also have an adjusted scale. In the next exercise we'll examine how these are calculated.
+
+## Calculate Adjusted Scales
+It's important to understand how rstanarm calculates adjusted scales for prior distributions, as priors can have a large impact on our estimates if not used in an appropriate manner. Calculate what the adjusted scales should be using the already loaded songs data.
+
+Instructions
+100 XP
+
++ Calculate the adjusted scale of the intercept.
++ Calculate the adjusted scale of the song_age.
++ What would be the adjusted scale of valence if it were in the model?
+
+```{r}
+# Calculate the adjusted scale for the intercept
+2.5 * sd(songs$popularity)
+
+# Calculate the adjusted scale for `song_age`
+(2.5/sd(songs$song_age)) * sd(songs$popularity)
+
+# Calculate the adjusted scale for `valence`
+(2.5/sd(songs$valence)) * sd(songs$popularity)
+```
+Awesome! Great work calculating those adjusted scales! These scales are exactly the same as the adjusted scales that we saw in the previous exercise.
+
+## Unadjusted Priors
+Now let's specify a model that doesn't use adjusted scales for prior distributions, so that we alter rstanarm default behavior. This will allow us to have more direct control over the information going into the estimation. The songs data is already loaded.
+
+Instructions
+100 XP
+
++ Predict popularity from song_age
++ Tell rstanarm not to autoscale the parameters
++ Print a prior summary to confirm there was no adjustment
+
+```{r, include = FALSE}
+# Estimate the model with unadjusted scales
+no_scale <- stan_glm(popularity ~ song_age, data = songs,
+    prior_intercept = normal(autoscale = FALSE),
+    prior = normal(autoscale = FALSE),
+    prior_aux = exponential(autoscale = FALSE)
+)
+```
+
+```
+# Estimate the model with unadjusted scales
+no_scale <- stan_glm(popularity ~ song_age, data = songs,
+    prior_intercept = normal(autoscale = FALSE),
+    prior = normal(autoscale = FALSE),
+    prior_aux = exponential(autoscale = FALSE)
+)
+```
+
+
+```{r}
+# Print the prior summary
+prior_summary(no_scale)
+```
+
+Perfect! You're well on your way to fully controlling the prior distributions. Notice that now that autoscale = FALSE has been specified, the prior summary no longer includes adjusted scales. Now that we've learned how to modify the default priors, we can move onto specifying priors that are entirely our own.
+
+## User Specified Priors
+
+## Changing Priors
+Now let's change the prior distributions for our Spotify model. Changing the priors allows us to specify our own beliefs about the expected values of the parameters. The songs data set is already loaded.
+
+Instructions
+100 XP
+
++ Predict popularity from song_age
++ Create a model, flat_prior that uses flat priors for all parameters
++ Print a summary of the prior distributions to the screen
+
+```{r, include = FALSE}
+# Estimate a model with flat priors
+flat_prior <- stan_glm(popularity ~ song_age, data = songs,
+    prior_intercept = NULL, prior = NULL, prior_aux = NULL)
+```
+
+````
+# Estimate a model with flat priors
+flat_prior <- stan_glm(popularity ~ song_age, data = songs,
+    prior_intercept = NULL, prior = NULL, prior_aux = NULL)
+```
+
+```{r}
+# Print a prior summary
+prior_summary(flat_prior)
+```
+
+
+Awesome job! You've learned how to specify your own flat prior distributions! Flat priors provide no additional information to the model. This is often not the best choice, but specifying priors that provide too much information can also be problematic. We'll explore this in the next exercise.
+
+## Specifying informative priors
+Now let's specify a custom prior so that we can have more control over our model. The songs data set is already loaded.
+
+Instructions
+100 XP
+
++ Predict popularity from song_age
++ Specify a normal prior distribution for the predictor with a mean of 20 and standard deviation of 0.1
++ Print the prior summary to the screen
+
+```{r, include = FALSE}
+# Estimate the model with an informative prior
+inform_prior <- stan_glm(popularity ~ song_age, data = songs,
+    prior = normal(location = 20, scale = 0.1, autoscale = FALSE))
+```
+
+```
+# Estimate the model with an informative prior
+inform_prior <- stan_glm(popularity ~ song_age, data = songs,
+    prior = normal(location = 20, scale = 0.1, autoscale = FALSE))
+``` 
+
+
+```{r}
+# Print the prior summary
+prior_summary(inform_prior)
+```
+
+Great! Now you know how to specify a custom prior distribution! Notice in the prior summary that we've said the coefficient for song_age has a location of 20 with a very small variance. Therefore, we would expect the parameter estimate to also be very close to 20.
+
+## Consequences of informative priors
+
+The inform_prior model you estimated is loaded in the environment. As a reminder, that model was specified with a normal prior on the predictor variable with a mean of 20 and standard deviation of 0.1. How did the specified prior affect the parameter estimates?
+
+Instructions
+50 XP
+
+Possible Answers
+
++ The estimate was unaffected by the prior
++ The estimate was slightly affected by the prior
++ **The estimate was almost the same as the prior**
+
+Correct! The estimate is almost the same as the mean of the specified prior.
+
+## Altering the Estimation Process
+
+## Altering the Estimation
+Now let's alter the estimation options so that we can be prepared to resolve errors that may arise. It's important for these errors to be resolved if they come up so that we can be sure we are making valid inferences. The songs data is already loaded.
+
+Instructions
+100 XP
+
++ Estimate two models predicting popularity from song_age
++ In the first model, set adapt_delta to 0.99
++ In the second model, set the max_treedepth to 15
++ View a summary of each model
+
+```{r, include = FALSE}
+# Estimate the model with a new `adapt_delta`
+adapt_model <- stan_glm(popularity ~ song_age, data = songs,
+  control = list(adapt_delta = 0.99))
+
+# Estimate the model with a new `max_treedepth`
+tree_model <- stan_glm(popularity ~ song_age, data = songs,
+  control = list(max_treedepth = 15))
+```
+
+```
+# Estimate the model with a new `adapt_delta`
+adapt_model <- stan_glm(popularity ~ song_age, data = songs,
+  control = list(adapt_delta = 0.99))
+
+# Estimate the model with a new `max_treedepth`
+tree_model <- stan_glm(popularity ~ song_age, data = songs,
+  control = list(max_treedepth = 15))
+```
+
+```{r}
+# View summary
+summary(adapt_model)
+
+# View summary
+summary(tree_model)
+```
+
+Wonderful! Now you're prepared to handle rstanarms most common estimation errors. Notice in these summaries that nothing looks different. These options don't alter the model itself, but instead modify the underlying estimation algorithm.

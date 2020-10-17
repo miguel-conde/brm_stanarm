@@ -1,0 +1,201 @@
+---
+title: "Presenting and Using a Bayesian Regression"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In this chapter, we'll learn how to use the estimated model to create visualizations of your model and make predictions for new data.
+
+```{r, include = FALSE}
+library(rstanarm)
+library(readr)
+songs <- read_csv(here::here("datasets", "datacamp-spotify-data.csv"))
+
+# Create the model here
+stan_model <- stan_glm(popularity ~ song_age, data = songs)
+
+library(broom)
+```
+
+## Visualizing a Bayesian Model
+
+## Plotting a Bayesian model
+In previous exercises we have estimated a Bayesian model predicting a song's popularity (popularity) from its age (song_age). Now let's visualize the model. Using the songs data set and stan_model object that are already loaded, create a visualization showing the data the estimated regression line using ggplot2.
+
+Instructions
+100 XP
+
++ Save a tidy summary of the model parameters to tidy_coef
++ Pull out the estimated intercept and slope from tidy_coef
++ Create a plot showing the data and estimate regression line with song_age on the x-axis and popularity on the y-axis
+
+```{r}
+# Save the model parameters
+tidy_coef <- tidy(stan_model)
+
+# Extract intercept and slope
+model_intercept <- tidy_coef$estimate[1]
+model_slope <- tidy_coef$estimate[2]
+
+# Create the plot
+ggplot(songs, aes(x = song_age, y = popularity)) +
+  geom_point() +
+  geom_abline(intercept = model_intercept, slope = model_slope)
+
+```
+Great work! In this plot, we can see that older songs are less popular than new songs, as we might expect. This is also reflected by the negative slope coefficient for song_age that we have seen in previous exercises. Unfortunately, this plot doesn't show us any measure of uncertainty or confidence in our line. We'll add this in the next exercise.
+
+## Plotting Model Uncertainty
+Because we used a Bayesian estimation, we can use the posterior distributions to create a predicted regression line from each draw in our posterior samples. These lines will show the uncertainty around our overall line. The songs and stan_model objects are already loaded, along with the model_intercept and model_slope that you used in the last exercise.
+
+Instructions 
+
++ Save the values of the (Intercept) and song_age from each draw from the posterior distributions of stan_model
++ Print the values to the screen
++ Start the plot by creating a scatter plot with song_age on the x-axis and popularity on the y-axis
++ Add points to the plot
++ Plot the uncertainty by creating a regression line for each draw from the posterior distributions
++ Plot these lines in "skyblue" to make them stand out.
++ Add the final regression line by a plotting a line with final estimated intercept and slope
+
+
+```{r}
+library(tidybayes)
+```
+
+
+```{r}
+# Save the values from each draw of the posterior distribution
+draws <- spread_draws(stan_model, `(Intercept)`, `song_age`)
+
+# Print the `draws` data frame to the console
+draws
+```
+```{r}
+# Create the plot
+ggplot(songs, aes(x = song_age, y = popularity)) +
+  geom_point()
+```
+
+```{r}
+# Save the values from each draw of the posterior distribution
+draws <- spread_draws(stan_model, `(Intercept)`, `song_age`)
+
+# Create the plot
+ggplot(songs, aes(x=song_age, y=popularity)) +
+  geom_point() + 
+  geom_abline(data=draws, aes(intercept=`(Intercept)`, slope=song_age),
+              size=.1, alpha=.2, color="skyblue") +
+  geom_abline(intercept=model_intercept, slope=model_slope)
+```
+
+
+Awesome work! In our final plot we can see the data, the estimated regression line, and the uncertainty around the line. This is a ton of information conveyed in easily understandable plot that took only a few lines of code to create!
+
+## Making predictions
+
+Popularity for Observed Songs
+Let's practice making predictions about song popularity from the Spotify songs data. This will get us used to the syntax we will use for making predictions for new data that was not observed.
+
+Instructions
+100 XP
+
+
++ Estimate a model predicting popularity from song_age and artist_name
++ Print a summary of the estimated model
++ Create posterior distributions of the predicted scores for each song
++ Print the first 10 predicted scores for the first 5 songs
+
+```{r}
+# Estimate the regression model
+stan_model <- stan_glm(popularity ~ song_age + artist_name, data = songs)
+
+# Print the model summary
+summary(stan_model)
+
+# Get posteriors of predicted scores for each observation
+posteriors <- posterior_predict(stan_model)
+
+# Print 10 predicted scores for 5 songs
+posteriors[1:10, 1:5]
+```
+Great work! We now have a posterior distribution for the predicted popularity of every song in our data set. But what if we want to predict the popularity for songs that aren't in our data set? We'll do this in the next exercise.
+
+## Popularity for New Songs
+Beyoncé's most recent album, Lemonade, is not in our songs data set. Let's predict how popular a song on that album would be. The Lemonade album was released 663 days before this data set was created. The stan_model object you created in the last exercise is loaded in your environment.
+
+Instructions
+100 XP
+
++ Create a data frame of new data to be predicted including the song_age and artist_name variables
++ Create a posterior distribution for predicted popularity of a song on Lemonade
++ Print the predicted popularity for the first 10 draws from the posterior distribution
++ Print a summary of the posterior predictions for the 1 new observation
+
+```{r}
+# Create data frame of new data
+predict_data <- data.frame(song_age = 663, artist_name = "Beyoncé")
+
+# Create posterior predictions for Lemonade album
+new_predictions <- posterior_predict(stan_model, newdata = predict_data)
+
+# Print first 10 predictions for the new data
+new_predictions[1:10,]
+
+# Print a summary of the posterior distribution of predicted popularity
+summary(new_predictions[, 1])
+```
+Awesome! We now have a posterior distribution for the predicted popularity of a song from the the Lemonade album. From the posterior summary we can see there is large range of plausible values, ranging from 10.85 to 98.45!
+
+## Visualizing Predictions
+
+Format prediction posteriors
+Now let's plot some new predictions. In this exercise, we'll predict how popular a song would be that was newly released and has a song_age of 0. We're still predicting popularity from song_age and artist_name. The new_predictions object has already been created and contains the distributions for the predicted scores for a new song from Adele, Taylor Swift, and Beyoncé.
+
+Instructions
+100 XP
+
++ Print the predicted scores from the first 10 iterations of new_predictions.
++ Convert new_predictions to a data frame and name the columns of the data frame "Adele", "Taylor Swift", and "Beyoncé".
++ Structure the data in long format, with only two columns: artist_name and predict.
++ Print the first six rows of the newly structured plot_posterior data frame.
+
+```{r}
+# View new data predictions
+new_predictions[1:10, ]
+
+# Convert to data frame and rename variables
+new_predictions <- as.data.frame(new_predictions)
+colnames(new_predictions) <- c("Adele", "Taylor Swift", "Beyoncé")
+
+# Create tidy data structure
+plot_posterior <- gather(new_predictions, key = "artist_name", value = "predict")
+
+# Print formated data
+head(plot_posterior)
+```
+
+Great work! We now have a data frame with two columns: artist_name and predict. We can use this data set to create of plot of the predicted popularity of songs for each artist that are brand new! We'll make this plot in the next exercise.
+
+## Visualize New Predictions
+Now that you've formatted the data, it's time to create the plot of predicted popularity distributions. The plot_posterior data frame that you just created is already available in the environment. We will use that data frame to create a visualization to communicate the results of our analysis.
+
+Instructions
+100 XP
+
++ Create a ggplot graphic with predict on the x-axis
++ Wrap the graphic so that each artist_name gets its own plot
++ Keep all facets of the plot in one column
++ Draw a density curve for the predicted popularity
+
+```{r}
+# Create plot of 
+ggplot(plot_posterior, aes(x = predict)) +
+facet_wrap(~ artist_name, ncol = 1) +
+geom_density()
+```
+
+Great work! You've create a great looking plot to visualize the predicted popularity of a new song from each of these artists. We can see that the distribution for Adele has the highest predicted popularity, followed by Taylor Swift, and then Beyoncé.
